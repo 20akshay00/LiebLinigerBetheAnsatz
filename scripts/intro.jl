@@ -5,13 +5,13 @@ using LinearAlgebra, Plots, LaTeXStrings
 
 begin
     # TG limit
-    rho, e, n, Q = get_ground_state(1e8, N=100)
-    println(norm(e / n^3 - π^2 / 3), " ", Q, " ", rho(0))
+    rho, e, n_tg, Q = get_ground_state(1e8, N=100)
+    println(norm(e / n_tg^3 - π^2 / 3), " ", Q, " ", rho(0))
     plot(rho, range(-Q, Q, 100), ylim=[0, 4.], lab="", lw=4)
 end
 
 let
-    γ = 10
+    γ = 0.1
     N = 100
     quadrature_rule = midpoint_quadrature
     rho, e, n, Q = get_ground_state(γ, N=N, quadrature_rule=quadrature_rule)
@@ -27,10 +27,22 @@ let
     psol(v) = 2 * n * (acos(v / c) - (v / c) * sqrt(1 - (v / c)^2))
     vs = range(-c, c, 100)
 
-    plot!(p_h ./ n, E_h ./ n^2, label="Type I (Holes)", lw=2, title="Lieb-Liniger Spectrum (γ=10)")
+    plot!(p_h ./ n, E_h ./ n^2, label="Type I (Holes)", lw=2, title="Lieb-Liniger Spectrum (γ=$γ)")
     plot!(psol.(vs) ./ n, Esol.(vs) ./ n^2, c=:black, ls=:dash, lw=2, lab="Soliton")
 
     xlabel!("Momentum " * L"p/ρ")
     ylabel!("Energy " * L"\epsilon/ρ^2")
+    plot!(framestyle=:box)
+end
+
+begin # speed of sound
+    γs = 10 .^ (range(-2, 2, 20))
+    vs = zeros(length(γs))
+    for (idx, γ) in enumerate(γs)
+        rho, e, n, Q = get_ground_state(γ)
+        vs[idx] = n / (2π * rho(Q)^2) / (2 * π * n)
+    end
+    plot(γs, vs, xscale=:log10, lw = 2, lab = "")
+    plot!(ylims = [0, 1], ylabel = L"v_s/v_F", xlabel = L"\gamma")
 end
 

@@ -60,13 +60,13 @@ function get_excitation_spectrum(γ; quadrature_rule=gausslobatto, N=100, kwargs
 
     # solve for dressed Energy: ε(k) - ∫ K ε = k^2 - μ
     # split ε(k) = ε₀(k) - μ * ε₁(k)
-    Ksym(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
+    K(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
 
     solver = QuadratureSolver(quadrature_rule(N))
 
     # solve auxiliary equations: (I - K)ε₀ = k^2  and  (I - K)ε₁ = 1
-    eps0, xs, ws = solve(solver, Ksym, k -> k^2, 0., Q)
-    eps1, _, _ = solve(solver, Ksym, k -> 1.0, 0., Q)
+    eps0, xs, ws = solve(solver, K, k -> k^2, 0., Q)
+    eps1, _, _ = solve(solver, K, k -> 1.0, 0., Q)
 
     # enforce ε(Q) = 0 to find μ
     μ = eps0(Q) / eps1(Q)
