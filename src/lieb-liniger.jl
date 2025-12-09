@@ -24,50 +24,35 @@ function solve_ll_distribution(c, Q; N=100, quadrature_rule=gausslobatto)
     return rho, particle_density, energy_density
 end
 
-function get_ground_state(γ; c=1.0, kwargs...)
-    particle_density_target = c / γ
-
-    function residual(Q)
-        (Q <= 1e-9) && return -particle_density_target
-        _, particle_density_curr, _ = solve_ll_distribution(c, Q; kwargs...)
-        return particle_density_curr - particle_density_target
+function get_ground_state(; γ=nothing, μ=nothing, c=1.0, Ql=1e-8, Qh=1., maxiter=100, kwargs...)
+    if !isnothing(γ) && isnothing(μ)
+        # particle density
+        target = c / γ
+        metric_func = Q -> solve_ll_distribution(c, Q; kwargs...)[2]
+    elseif !isnothing(μ) && isnothing(γ)
+        # chemical potential
+        target = μ
+        metric_func = Q -> compute_chemical_potential(c, Q; kwargs...)
+    else
+        error("Cannot specify both γ (canonical) and μ (grand canonical) at once!")
     end
 
-    Q_low = 1e-8 # n ~ 0 => residual(Q) < 0
-    Q_high = 1.0 # find such that residual(Q) > 0
+    function residual(Q)
+        (Q <= 1e-9) && return -target
+        return metric_func(Q) - target
+    end
 
-    # expand upper bound until density is high enough
     iter = 0
-    while residual(Q_high) < 0
-        Q_high *= 2.0
+    while residual(Qh) < 0
+        Qh *= 2.0
         iter += 1
-        if iter > 50
-            error("Could not bracket root (Target density too high?)")
-        end
+        (iter > maxiter) && error("Could not bracket root (Target too high?)")
     end
 
-    Q = find_zero(residual, (Q_low, Q_high), Bisection())
+    Q = find_zero(residual, (Ql, Qh), Bisection())
 
-    rho, particle_density_final, energy_density_final = solve_ll_distribution(c, Q; kwargs...)
-
-    return rho, energy_density_final, particle_density_final, Q
-end
-
-function get_ground_state_gce(μ, c; N=100, kwargs...)
-    function residual(Q)
-        (Q <= 1e-9) && return -μ
-        return compute_chemical_potential(c, Q; N=N, kwargs...) - μ
-    end
-
-    Q_low, Q_high = 1e-6, 10.0
-    while residual(Q_high) < 0
-        Q_high *= 2.0
-    end
-
-    Q = find_zero(residual, (Q_low, Q_high), Bisection())
-
-    rho, particle_density_final, energy_density_final = solve_ll_distribution(c, Q; N=N, kwargs...)
-    return rho, energy_density_final, particle_density_final, Q
+    rho, n, e = solve_ll_distribution(c, Q; kwargs...)
+    return rho, e, n, Q
 end
 
 function compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
@@ -93,7 +78,7 @@ function compute_chemical_potential(c, Q; N=100, quadrature_rule=gausslobatto, k
 end
 
 function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, kwargs...)
-    rho_gs, _, _, Q = get_ground_state(γ, c=c; kwargs...)
+    rho_gs, _, _, Q = get_ground_state(γ=γ, c=c, kwargs...)
 
     ε, _ = compute_dressed_energy(c, Q, kwargs...)
 
@@ -102,7 +87,7 @@ function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, 
     θ(x) = 2 * atan(x / c)
     P(k) = k + dot(ws, (θ.(k .- xs) .+ θ.(k .+ xs)) .* rho_gs.(xs))
 
-    # dispersion Curves
+    # dispersion curves
     k_fermi = P(Q)
 
     # grid for half the Fermi sea [0, Q]
