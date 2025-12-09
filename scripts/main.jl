@@ -12,7 +12,7 @@ end
 
 let
     # excitations in dilute limit
-    γ = 0.1
+    γ = 1e-8
     N = 100
     quadrature_rule = midpoint_quadrature
     rho, e, n, Q = get_ground_state(γ, N=N, quadrature_rule=quadrature_rule)
@@ -35,8 +35,8 @@ let
     ylabel!("Energy " * L"\epsilon/ρ^2")
     plot!(framestyle=:box)
 
-    μ = compute_chemical_potential(c, Q)
-    println(μ, " ", 2 * n * c)
+    # μ = compute_chemical_potential(c, Q)
+    # println(μ, " ", 2 * n * c)
 end
 
 begin # speed of sound

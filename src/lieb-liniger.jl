@@ -71,14 +71,15 @@ function get_ground_state_gce(μ, c; N=100, kwargs...)
 end
 
 function compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
-    K(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
+    kernel(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
+    kernel_traced(k) = 1 / π * (atan((k + Q) / c) - atan((k - Q) / c))
 
-    solver = QuadratureSolver(quadrature_rule(N))
+    solver = ModifiedQuadratureSolver(quadrature_rule(N))
 
     # ε(k) - ∫ K ε = k^2 - μ
     # solve auxiliary equations: (I - K)ε₀ = k^2  and  (I - K)ε₁ = 1
-    eps0, _, _ = solve(solver, K, k -> k^2, 0., Q)
-    eps1, _, _ = solve(solver, K, k -> 1.0, 0., Q)
+    eps0, _, _ = solve(solver, kernel, k -> k^2, kernel_traced, 0., Q)
+    eps1, _, _ = solve(solver, kernel, k -> 1.0, kernel_traced, 0., Q)
 
     # enforce ε(Q) = 0 to find μ
     μ = eps0(Q) / eps1(Q)
