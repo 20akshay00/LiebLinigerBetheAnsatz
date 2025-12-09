@@ -5,12 +5,13 @@ using LinearAlgebra, Plots, LaTeXStrings
 
 begin
     # TG limit
-    rho, e, n_tg, Q = get_ground_state(1e8, N=100)
-    println(norm(e / n_tg^3 - π^2 / 3), " ", Q, " ", rho(0))
+    rho, e, n, Q = get_ground_state(1e8, N=100)
+    println(norm(e / n^3 - π^2 / 3), " ", Q, " ", rho(0))
     plot(rho, range(-Q, Q, 100), ylim=[0, 4.], lab="", lw=4)
 end
 
 let
+    # excitations in dilute limit
     γ = 0.1
     N = 100
     quadrature_rule = midpoint_quadrature
@@ -33,6 +34,9 @@ let
     xlabel!("Momentum " * L"p/ρ")
     ylabel!("Energy " * L"\epsilon/ρ^2")
     plot!(framestyle=:box)
+
+    μ = compute_chemical_potential(c, Q)
+    println(μ, " ", 2 * n * c)
 end
 
 begin # speed of sound
@@ -42,7 +46,17 @@ begin # speed of sound
         rho, e, n, Q = get_ground_state(γ)
         vs[idx] = n / (2π * rho(Q)^2) / (2 * π * n)
     end
-    plot(γs, vs, xscale=:log10, lw = 2, lab = "")
-    plot!(ylims = [0, 1], ylabel = L"v_s/v_F", xlabel = L"\gamma")
+    plot(γs, vs, xscale=:log10, lw=2, lab="")
+    plot!(ylims=[0, 1], ylabel=L"v_s/v_F", xlabel=L"\gamma")
 end
 
+begin
+    μ, c = 5., 10.
+    rho, e, n, Q = get_ground_state_gce(μ, c)
+    println(e - μ * n)
+    γ = c / n
+    p_h, E_h, p_p, E_p = get_excitation_spectrum(γ, c)
+
+    plot(p_h ./ n, E_h ./ n^2, label="Type I (Holes)", lw=2, title="Lieb-Liniger Spectrum (γ=$γ)")
+    plot!(p_p ./ n, E_p ./ n^2, label="Type II (Particles)", lw=2, xtick=pitick(0, 2π, 1, mode=:latex))
+end

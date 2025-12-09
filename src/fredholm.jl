@@ -19,9 +19,7 @@ function solve(solver::QuadratureSolver, kernel, g, yi, yf)
     (; weights, roots, N) = solver
 
     # map roots and weights to the physical interval [yi, yf]
-    J = (yf - yi) / 2 # Jacobian of the transformation
-    xs = (roots .* J) .+ (yf + yi) / 2
-    ws = weights .* J
+    xs, ws = rescale(roots, weights, yi, yf)
 
     K = kernel.(xs, transpose(xs))
     gs = g.(xs)
@@ -47,9 +45,7 @@ function solve(solver::ModifiedQuadratureSolver, kernel, g, kernel_traced, yi, y
     (; weights, roots, N) = solver
 
     # map roots and weights to the physical interval [yi, yf]
-    J = (yf - yi) / 2 # Jacobian of the transformation
-    xs = (roots .* J) .+ (yf + yi) / 2
-    ws = weights .* J
+    xs, ws = rescale(roots, weights, yi, yf)
 
     K = kernel.(xs, transpose(xs))
     gs = g.(xs)

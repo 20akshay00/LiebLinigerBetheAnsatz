@@ -1,3 +1,11 @@
+# map roots and weights to the physical interval [yi, yf] from [-1, 1]
+function rescale(roots, weights, yi, yf)
+    J = (yf - yi) / 2 # Jacobian of the transformation
+    xs = (roots .* J) .+ (yf + yi) / 2
+    ws = weights .* J
+    return xs, ws
+end
+
 ## common quadrature rules
 # standardized to [-1, 1]
 function reimann_quadrature(N)

@@ -24,8 +24,7 @@ function solve_ll_distribution(c, Q; N=100, quadrature_rule=gausslobatto)
     return rho, particle_density, energy_density
 end
 
-function get_ground_state(γ; kwargs...)
-    c = 1.0
+function get_ground_state(γ; c=1.0, kwargs...)
     particle_density_target = c / γ
 
     function residual(Q)
@@ -54,26 +53,51 @@ function get_ground_state(γ; kwargs...)
     return rho, energy_density_final, particle_density_final, Q
 end
 
-function get_excitation_spectrum(γ; quadrature_rule=gausslobatto, N=100, kwargs...)
-    rho_gs, _, _, Q = get_ground_state(γ; kwargs...)
-    c = 1.0
+function get_ground_state_gce(μ, c; N=100, kwargs...)
+    function residual(Q)
+        (Q <= 1e-9) && return -μ
+        return compute_chemical_potential(c, Q; N=N, kwargs...) - μ
+    end
 
-    # solve for dressed Energy: ε(k) - ∫ K ε = k^2 - μ
-    # split ε(k) = ε₀(k) - μ * ε₁(k)
+    Q_low, Q_high = 1e-6, 10.0
+    while residual(Q_high) < 0
+        Q_high *= 2.0
+    end
+
+    Q = find_zero(residual, (Q_low, Q_high), Bisection())
+
+    rho, particle_density_final, energy_density_final = solve_ll_distribution(c, Q; N=N, kwargs...)
+    return rho, energy_density_final, particle_density_final, Q
+end
+
+function compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
     K(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
 
     solver = QuadratureSolver(quadrature_rule(N))
 
+    # ε(k) - ∫ K ε = k^2 - μ
     # solve auxiliary equations: (I - K)ε₀ = k^2  and  (I - K)ε₁ = 1
-    eps0, xs, ws = solve(solver, K, k -> k^2, 0., Q)
+    eps0, _, _ = solve(solver, K, k -> k^2, 0., Q)
     eps1, _, _ = solve(solver, K, k -> 1.0, 0., Q)
 
     # enforce ε(Q) = 0 to find μ
     μ = eps0(Q) / eps1(Q)
-    ε(k) = eps0(k) - μ * eps1(k)
+
+    return (k) -> eps0(k) - μ * eps1(k), μ
+end
+
+function compute_chemical_potential(c, Q; N=100, quadrature_rule=gausslobatto, kwargs...)
+    _, μ = compute_dressed_energy(c, Q; kwargs...)
+    return μ
+end
+
+function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, kwargs...)
+    rho_gs, _, _, Q = get_ground_state(γ, c=c; kwargs...)
+
+    ε, _ = compute_dressed_energy(c, Q, kwargs...)
 
     # dressed momentum P(k) = k + ∫ θ(k-q)ρ(q)dq
-    # integrate using the existing ground state nodes (ws, xs)
+    xs, ws = rescale(quadrature_rule(N)..., 0., Q)
     θ(x) = 2 * atan(x / c)
     P(k) = k + dot(ws, (θ.(k .- xs) .+ θ.(k .+ xs)) .* rho_gs.(xs))
 
@@ -103,14 +127,4 @@ function get_excitation_spectrum(γ; quadrature_rule=gausslobatto, N=100, kwargs
     e_p = ε.(k_p)
 
     return p_h, e_h, p_p, e_p, k_fermi
-
-    # # Type I (Holes): k < Q.  p = P(Q) - P(k),  E = -ε(k)
-    # k_h = range(0, Q, length=N)
-    # p_h, E_h = k_fermi .- P.(k_h), -ε.(k_h)
-
-    # # Type II (Particles): k > Q.  p = P(k) - P(Q),  E = ε(k)
-    # k_p = range(Q, 3*Q, length=N)
-    # p_p, E_p = P.(k_p) .- k_fermi, ε.(k_p)
-
-    # return p_h, E_h, p_p, E_p
 end
