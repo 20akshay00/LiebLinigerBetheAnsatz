@@ -1,2 +1,7 @@
+name = "LiebLinigerBetheAnsatz"
+authors = ["Akshay Shankar"]
+[compat]
+julia = "1.11.7"
+DrWatson = "2.19.1"
 [deps]
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
