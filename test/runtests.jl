@@ -1,6 +1,6 @@
 using DrWatson, Test
 @quickactivate "LiebLinigerBetheAnsatz"
-using LiebLinigerBetheAnsatz
+using LiebLinigerBetheAnsatz, LinearAlgebra
 # include(srcdir("file.jl"))
 
 println("Starting tests")
@@ -13,14 +13,14 @@ println("Starting tests")
     f1, _, _ = solve(
         QuadratureSolver(gausslegendre(30)),
         (x, y) -> -min(x, y),
-        x -> x * MathConstants.e + 1,
+        x -> x * ℯ + 1,
         xlim...
     )
 
     f2, _, _ = solve(
         ModifiedQuadratureSolver(gausslegendre(30)),
         (x, y) -> -min(x, y),
-        x -> x * MathConstants.e + 1,
+        x -> x * ℯ + 1,
         x -> -(x - x^2 / 2),
         xlim...
     )
@@ -57,7 +57,7 @@ end
 
 @testset "Lieb-Liniger ground state" begin
     # Tonks-Girardeau limit
-    rho, e, n, Q = get_ground_state(1e8, N=100)
+    rho, e, n, Q = get_ground_state(γ=1e8, N=100)
     @test norm(e / n^3 - π^2 / 3) < 1e-6
     @test norm(n - Q / pi) < 1e-10
     @test norm(rho(0) - 1 / 2π) < 1e-8
