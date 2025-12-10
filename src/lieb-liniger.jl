@@ -77,7 +77,7 @@ function compute_chemical_potential(c, Q; N=100, quadrature_rule=gausslobatto, k
     return μ
 end
 
-function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, kwargs...)
+function get_particle_hole_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
     rho_gs, _, _, Q = get_ground_state(γ=γ, c=c, kwargs...)
 
     ε, _ = compute_dressed_energy(c, Q, kwargs...)
@@ -87,21 +87,20 @@ function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, 
     θ(x) = 2 * atan(x / c)
     P(k) = k + dot(ws, (θ.(k .- xs) .+ θ.(k .+ xs)) .* rho_gs.(xs))
 
-    # dispersion curves
-    k_fermi = P(Q)
+    kf = P(Q) # Fermi momentum
 
     # grid for half the Fermi sea [0, Q]
-    k_h = range(0, Q, length=N)
+    k_h = range(0, Q, length=num_points)
     P_vals = P.(k_h)
     E_vals = -ε.(k_h) # energy is positive for excitations
 
     # #1 removing particle from right side (Q -> 0)
     # Momentum p = P(Q) - P(k)
-    p1 = k_fermi .- P_vals
+    p1 = kf .- P_vals
 
     # #2 removing particle from left side (0 -> -Q)
     # Momentum p = P(Q) - P(-k) = P(Q) + P(k)
-    p2 = k_fermi .+ P_vals
+    p2 = kf .+ P_vals
 
     # full range 0 -> 2kF
     p_h = vcat(reverse(p1), p2)
@@ -109,8 +108,8 @@ function get_excitation_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, 
 
     # Type II (Particle) branch (k > Q)
     k_p = range(Q, 3 * Q, length=N)
-    p_p = P.(k_p) .- k_fermi
+    p_p = P.(k_p) .- kf
     e_p = ε.(k_p)
 
-    return p_h, e_h, p_p, e_p, k_fermi
+    return p_h, e_h, p_p, e_p, kf
 end

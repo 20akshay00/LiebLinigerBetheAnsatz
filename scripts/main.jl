@@ -55,8 +55,20 @@ begin
     rho, e, n, Q = get_ground_state(μ=μ, c=c)
     println(e - μ * n)
     γ = c / n
-    p_h, E_h, p_p, E_p = get_excitation_spectrum(γ, c)
+    p_h, E_h, p_p, E_p = get_particle_hole_spectrum(γ, c)
 
     plot(p_h ./ n, E_h ./ n^2, label="Type I (Holes)", lw=2, title="Lieb-Liniger Spectrum (γ=$γ)")
     plot!(p_p ./ n, E_p ./ n^2, label="Type II (Particles)", lw=2, xtick=pitick(0, 2π, 1, mode=:latex))
+    xlabel!("Momentum " * L"p/ρ")
+    ylabel!("Energy " * L"\epsilon/ρ^2")
+end
+
+begin # magnon spectrum
+    γ = 25
+    c = 50
+    rho, e, n, Q = get_ground_state(γ=γ, c=c)
+    p, e, kf = get_magnon_spectrum(γ, c)
+    plot(p ./ n, e ./ n^2, ylim=[0, Inf], lw=2, lab="", xtick=pitick(0, 2π, 1, mode=:latex), xlabel="")
+    xlabel!("Momentum " * L"p/ρ")
+    ylabel!("Energy " * L"\epsilon/ρ^2")
 end

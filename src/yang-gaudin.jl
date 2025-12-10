@@ -1,51 +1,29 @@
-function get_magnon_spectrum(γ; N=100)
-    c = 1.0
+function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
+    rho, _, n, Q = get_ground_state(γ=γ, c=c, kwargs...)
+    ε, _ = compute_dressed_energy(c, Q; kwargs...)
+    xs, ws = rescale(quadrature_rule(N)..., 0., Q)
+    kf = π * n
 
-    _, _, n_total, Q = get_ground_state(γ; N=N)
-    k_fermi = π * n_total
+    # 2 * atan(x / (c/2))
+    theta_mag(x) = 2 * atan(2 * x / c)
 
-    Ksym(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
-    solver = QuadratureSolver(gausslobatto(N))
+    # kernel is the derivative of theta
+    # 1/(2pi) * 4c/(c^2+4x^2) = 2c / (pi*(c^2+4x^2))
+    K_mag(x) = (2 * c) / (π * (c^2 + 4 * x^2))
 
-    rho, xs, ws = solve(solver, Ksym, x -> 1 / (2π), 0.0, Q)
-    rho_vals = rho.(xs)
+    u_grid = range(0, π / 2, length=num_points)
+    Λs = c .* tan.(u_grid)
 
-    # solve for dressed energy epsilon
-    # (I-K)ε₀ = k^2  and  (I-K)ε₁ = 1
-    eps0_func, _, _ = solve(solver, Ksym, k -> k^2, 0.0, Q)
-    eps1_func, _, _ = solve(solver, Ksym, k -> 1.0, 0.0, Q)
+    # compute P relative to the limit at Inf to fix the zero point
+    # P(infinity) would be kf - dot(..., -2pi*rho) = kf + pi*n = 2kf.
+    # so we define p_phys = 2kf - P_raw
+    P_raw = [kf - dot(ws, (theta_mag.(xs .- Λ) .- theta_mag.(xs .+ Λ)) .* rho.(xs)) for Λ in Λs]
+    E_mag = [-dot(ws, (K_mag.(xs .- Λ) .+ K_mag.(xs .+ Λ)) .* ε.(xs)) for Λ in Λs]
 
-    # determine chemical potential μ such that ε(Q) = 0
-    # ε(k) = ε₀(k) - μ * ε₁(k)
-    μ = eps0_func(Q) / eps1_func(Q)
-    eps_vals = eps0_func.(xs) .- μ .* eps1_func.(xs)
+    # shift momentum so gapless point is at p=0
+    # P_raw goes from kf (at L=0) to 2kf (at L=inf)
+    # so we reverse it: p_phys goes from 0 to kf
+    p_phys = abs.(P_raw[end] .- P_raw)
 
-    # compute magnon Spectrum
-    # scan spin rapidity Λ from 0 to ∞
-    # we use a denser grid near 0 where curvature is high
-    Λs = [range(0, 5.0, length=80); range(5.1, 50.0, length=20)]
-
-    P_mag = Float64[]
-    E_mag = Float64[]
-
-    # kernel for magnon coupling (Lorentzian of width c)
-    # K_coupling(x) = c/π * 1/(c^2 + x^2) 
-    K_coupling(x) = (c / π) * (1 / (c^2 + x^2))
-
-    theta(x) = 2 * atan(x / c)
-
-    for Λ in Λs
-        # energy: E = - ∫_{-Q}^Q K_coupling(k - Λ) ε(k) dk
-        term_E = K_coupling.(xs .- Λ) .+ K_coupling.(xs .+ Λ)
-        E = -dot(ws, term_E .* eps_vals)
-
-        # momentum: P = k_F - ∫_{-Q}^Q θ(k - Λ) ρ(k) dk
-        term_P = theta.(xs .- Λ) .- theta.(xs .+ Λ)
-        P = k_fermi - dot(ws, term_P .* rho_vals)
-
-        push!(P_mag, P)
-        push!(E_mag, E)
-    end
-
-    return P_mag, E_mag, k_fermi
+    return p_phys, E_mag, kf
 end
