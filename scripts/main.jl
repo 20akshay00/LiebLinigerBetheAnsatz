@@ -12,7 +12,7 @@ end
 
 let
     # excitations in dilute limit
-    γ = 1e-1
+    γ = 10
     N = 100
     quadrature_rule = midpoint_quadrature
     rho, e, n, Q = get_ground_state(γ=γ, N=N, quadrature_rule=quadrature_rule)
@@ -36,6 +36,7 @@ let
     ylabel!("Energy " * L"\epsilon/ρ^2")
     plot!(framestyle=:box)
 
+    #savefig("./data/plots/particle-hole-gamma=$(γ)_c=1.png")
     # μ = compute_chemical_potential(c, Q)
     # println(μ, " ", 2 * n * c)
 end
@@ -51,7 +52,7 @@ begin # speed of sound
     plot!(ylims=[0, 1], ylabel=L"v_s/v_F", xlabel=L"\gamma")
 end
 
-begin
+begin # grand-canonical
     μ, c = 5., 10.
     rho, e, n, Q = get_ground_state(μ=μ, c=c)
     println(e - μ * n)
@@ -64,12 +65,30 @@ begin
     ylabel!("Energy " * L"\epsilon/ρ^2")
 end
 
-begin # magnon spectrum
-    γ = 25
-    c = 50
+begin # compare magnon w/ holon
+    γ, c = 0.1, 1.
     rho, e, n, Q = get_ground_state(γ=γ, c=c)
-    p, e, kf = get_magnon_spectrum(γ, c)
-    plot(p ./ n, e ./ n^2, ylim=[0, Inf], lw=2, lab="", xtick=pitick(0, 2π, 1, mode=:latex), xlabel="")
+    p_h, E_h, p_p, E_p = get_particle_hole_spectrum(γ, c)
+    p_m, E_m, kf = get_magnon_spectrum(γ, c)
+
+    plot(p_h ./ n, E_h ./ n^2, label="Type I (Holes)", lw=2, title="Lieb-Liniger Spectrum (γ=$γ)")
+    plot!(p_p ./ n, E_p ./ n^2, label="Type II (Particles)", lw=2, xtick=pitick(0, 2π, 1, mode=:latex))
+    plot!(p_m ./ n, E_m ./ n^2, label="Magnon", lw=2, xtick=pitick(0, 2π, 1, mode=:latex))
+
+    println(E_h[50] / E_m[50])
     xlabel!("Momentum " * L"p/ρ")
     ylabel!("Energy " * L"\epsilon/ρ^2")
+    # ylims!(0, 20)
+end
+
+begin # magnon spectrum
+    γ = 1.
+    c = 1
+    rho, e, n, Q = get_ground_state(γ=γ, c=c)
+    p, e, kf = get_magnon_spectrum(γ, c)
+    plot(p ./ n, e ./ n^2, ylim=[-0.1, Inf], lw=2, lab="", xtick=pitick(0, 2π, 1, mode=:latex), xlabel="", title="Lieb-Liniger Spectrum (γ=$γ)")
+    plot!(framestyle="box")
+    xlabel!("Momentum " * L"p/ρ")
+    ylabel!("Energy " * L"\epsilon/ρ^2")
+    #savefig("./data/plots/magnon-gamma=$(γ)_c=$c.png")
 end
