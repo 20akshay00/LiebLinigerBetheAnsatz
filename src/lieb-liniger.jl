@@ -107,7 +107,7 @@ function get_particle_hole_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=10
     e_h = vcat(reverse(E_vals), E_vals)
 
     # Type II (Particle) branch (k > Q)
-    k_p = range(Q, 3 * Q, length=N)
+    k_p = range(Q, 3 * Q, length=num_points)
     p_p = P.(k_p) .- kf
     e_p = ε.(k_p)
 
