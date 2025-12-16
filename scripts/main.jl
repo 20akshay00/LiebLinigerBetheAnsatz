@@ -92,3 +92,24 @@ begin # magnon spectrum
     ylabel!("Energy " * L"\epsilon/ρ^2")
     #savefig("./data/plots/magnon-gamma=$(γ)_c=$c.png")
 end
+
+
+let # magnon spectrum
+    γs = 10 .^ range(-3, 4, 40)
+    c = 1
+
+    p = plot()
+    res = []
+    for (i, γ) in enumerate(γs)
+        rho, e, n, Q = get_ground_state(γ=γ, c=c)
+        p, e, kf = get_magnon_spectrum(γ, c)
+        push!(res, e[1] ./ n^2)
+        #plot!(p ./ n, e ./ n^2, ylim=[-0.1, Inf], lw=2, xtick=pitick(0, 2π, 1, mode=:latex), xlabel="", lab="γ=$γ", color = palette(:roma, length(γs))[i])
+    end
+
+    scatter(γs, res, xscale = :log10, yscale = :log10)
+    plot!(framestyle="box")
+    xlabel!("LL parameter " * L"\gamma")
+    ylabel!("Maximum magnon energy " * L"\epsilon/ρ^2")
+    #savefig("./data/plots/magnon-gamma=$(γ)_c=$c.png")
+end
