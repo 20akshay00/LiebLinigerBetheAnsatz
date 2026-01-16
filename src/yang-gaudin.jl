@@ -1,3 +1,22 @@
+"""
+    get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
+
+Calculate the magnon excitation spectrum (dark solitons) for the Lieb-Liniger model using 
+the dressed energy and phase shift formalism.
+
+# Arguments
+- `γ`: Dimensionless interaction strength (c/n).
+- `c`: Coupling constant.
+- `quadrature_rule`: Integration rule for the solvers.
+- `N`: Number of quadrature points.
+- `num_points`: Number of points used to sample the spectrum.
+- `kwargs`: Keyword arguments passed to ground state and dressed energy solvers.
+
+# Returns
+- `p_phys`: Physical momentum of the magnon branch.
+- `e_mag`: Excitation energy of the magnon branch.
+- `kf`: The Fermi momentum π * n.
+"""
 function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
     rho, _, n, Q = get_ground_state(γ=γ, c=c, kwargs...)
     ε, _ = compute_dressed_energy(c, Q; kwargs...)

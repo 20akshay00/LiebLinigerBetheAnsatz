@@ -1,5 +1,22 @@
 # solves f(x) - λ ∫([K(x,y) + K(x,-y)] f(y), 0, Q) dy = g(x)
 # assumes that ρ(k) = ρ(-k) always
+"""
+    solve_ll_distribution(c, Q; N=100, quadrature_rule=gausslobatto)
+
+Solve the Lieb-Liniger integral equation for the root density distribution ρ(k) on the interval [0, Q].
+Uses a symmetrized kernel to account for the parity of the distribution.
+
+# Arguments
+- `c`: Interaction strength (coupling constant).
+- `Q`: Fermi rapidity (integration cutoff).
+- `N`: Number of quadrature points for the integral solver.
+- `quadrature_rule`: Function providing the quadrature nodes and weights.
+
+# Returns
+- `rho`: The solved density distribution function ρ(k).
+- `particle_density`: Total physical density n.
+- `energy_density`: Total energy density E/L.
+"""
 function solve_ll_distribution(c, Q; N=100, quadrature_rule=gausslobatto)
     # original kernel: 2c / (c^2 + (k-q)^2)
     # symmetrized:     K(k, q) + K(k, -q)
@@ -24,6 +41,27 @@ function solve_ll_distribution(c, Q; N=100, quadrature_rule=gausslobatto)
     return rho, particle_density, energy_density
 end
 
+"""
+    get_ground_state(; γ=nothing, μ=nothing, c=1.0, Ql=1e-8, Qh=1., maxiter=100, kwargs...)
+
+Find the ground state properties by solving for the Fermi rapidity Q that satisfies the 
+target interaction γ (canonical) or chemical potential μ (grand canonical).
+
+# Arguments
+- `γ`: Target dimensionless interaction parameter (c/n).
+- `μ`: Target chemical potential.
+- `c`: Coupling constant.
+- `Ql`: Lower bound for the bisection search of Q.
+- `Qh`: Initial upper bound for the bisection search of Q.
+- `maxiter`: Maximum iterations to bracket the root for Q.
+- `kwargs`: Keyword arguments passed to the distribution solver.
+
+# Returns
+- `rho`: The ground state density distribution.
+- `e`: Energy density.
+- `n`: Particle density.
+- `Q`: The determined Fermi rapidity.
+"""
 function get_ground_state(; γ=nothing, μ=nothing, c=1.0, Ql=1e-8, Qh=1., maxiter=100, kwargs...)
     if !isnothing(γ) && isnothing(μ)
         # particle density
@@ -55,6 +93,22 @@ function get_ground_state(; γ=nothing, μ=nothing, c=1.0, Ql=1e-8, Qh=1., maxit
     return rho, e, n, Q
 end
 
+"""
+    compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
+
+Solve the dressed energy equation (I - ∫K)ε = k² - μ, where the chemical potential μ 
+is determined by the boundary condition ε(Q) = 0.
+
+# Arguments
+- `c`: Interaction strength.
+- `Q`: Fermi rapidity.
+- `N`: Number of quadrature points.
+- `quadrature_rule`: Function providing the quadrature nodes and weights.
+
+# Returns
+- `ε`: The dressed energy function ε(k).
+- `μ`: The determined chemical potential.
+"""
 function compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
     kernel(k, q) = c / π * (1 / (c^2 + (k - q)^2) + 1 / (c^2 + (k + q)^2))
     kernel_traced(k) = 1 / π * (atan((k + Q) / c) - atan((k - Q) / c))
@@ -72,11 +126,36 @@ function compute_dressed_energy(c, Q; N=100, quadrature_rule=gausslobatto)
     return (k) -> eps0(k) - μ * eps1(k), μ
 end
 
+"""
+    compute_chemical_potential(c, Q; N=100, quadrature_rule=gausslobatto, kwargs...)
+
+Helper function to calculate the chemical potential μ for a given interaction strength c and rapidity cutoff Q.
+"""
 function compute_chemical_potential(c, Q; N=100, quadrature_rule=gausslobatto, kwargs...)
     _, μ = compute_dressed_energy(c, Q; kwargs...)
     return μ
 end
 
+"""
+    get_particle_hole_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
+
+Compute the excitation spectrum including hole branches (Type I) and particle branches (Type II).
+
+# Arguments
+- `γ`: Dimensionless interaction parameter.
+- `c`: Coupling constant.
+- `quadrature_rule`: Function providing the quadrature nodes and weights.
+- `N`: Number of quadrature points for the integral solvers.
+- `num_points`: Number of points to sample in the momentum/energy curves.
+- `kwargs`: Additional keyword arguments passed to internal solvers.
+
+# Returns
+- `p_h`: Momenta of the hole excitations (from 0 to 2kF).
+- `e_h`: Energies of the hole excitations.
+- `p_p`: Momenta of the particle excitations.
+- `e_p`: Energies of the particle excitations.
+- `kf`: The Fermi momentum P(Q).
+"""
 function get_particle_hole_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
     rho_gs, _, _, Q = get_ground_state(γ=γ, c=c, kwargs...)
 
