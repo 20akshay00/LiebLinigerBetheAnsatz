@@ -6,7 +6,7 @@ This repository has some basic scripts to compute the ground state energy and ex
 ## Example 
 
 ### Ground state
-```
+```julia
 # TG limit
 
 # in order, this returns (distribution of quasi-momenta, energy, particle density, Fermi energy)
@@ -16,7 +16,7 @@ plot(rho, range(-Q, Q, 100), ylim=[0, 4.], lab="", lw=4)
 ```
 
 ## Excitations
-```
+```julia
 # excitations in dilute limit
 γ, N = 10, 100
 quadrature_rule = midpoint_quadrature
@@ -43,4 +43,4 @@ plot!(framestyle=:box)
 μ = compute_chemical_potential(c, Q)
 println(μ, " ", 2 * n * c)
 ```
-![./particle-hole-gamma=0.1_c=1.png](spectrum)
+![spectrum](./particle-hole-gamma=0.1_c=1.png)
