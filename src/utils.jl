@@ -71,3 +71,15 @@ function pitick(start, stop, denom; mode=:text)
     ticklabel = piticklabel.((a:b) .// denom, Val(mode))
     tick, ticklabel
 end
+
+# defaults
+default_quadrature_rule() = gausslobatto
+default_quadrature_points() = 100
+
+# linear interpolation
+function _lerp(x, xs, ys)
+    x <= xs[1] && return 0.0
+    x >= xs[end] && return ys[end]
+    i = searchsortedlast(xs, x)
+    return ys[i] + (ys[i+1] - ys[i]) * (x - xs[i]) / (xs[i+1] - xs[i])
+end
