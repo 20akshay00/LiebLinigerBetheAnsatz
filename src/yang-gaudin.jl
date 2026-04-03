@@ -17,9 +17,15 @@ the dressed energy and phase shift formalism.
 - `e_mag`: Excitation energy of the magnon branch.
 - `kf`: The Fermi momentum π * n.
 """
-function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num_points=100, kwargs...)
-    rho, _, n, Q = get_ground_state(γ=γ, c=c, kwargs...)
-    ε, _ = compute_dressed_energy(c, Q; kwargs...)
+function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num_points=100, rho_gs=nothing, Q=nothing, ε=nothing, n=nothing, kwargs...)
+    if any(isnothing.([rho_gs, Q, n]))
+        rho_gs, _, n, Q = get_ground_state(γ=γ, c=c, kwargs...)
+    end
+
+    if isnothing(ε)
+        ε, _ = compute_dressed_energy(c, Q; kwargs...)
+    end
+
     xs, ws = rescale(quadrature_rule(N)..., 0., Q)
     kf = π * n
 
@@ -35,7 +41,7 @@ function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num
     # compute P relative to the limit at Inf to fix the zero point
     # P(infinity) would be kf - dot(..., -2pi*rho) = kf + pi*n = 2kf.
     # so we define p_phys = 2kf - P_raw
-    p_raw = [kf - dot(ws, (θ.(xs .- Λ) .- θ.(xs .+ Λ)) .* rho.(xs)) for Λ in Λs]
+    p_raw = [kf - dot(ws, (θ.(xs .- Λ) .- θ.(xs .+ Λ)) .* rho_gs.(xs)) for Λ in Λs]
     e_mag = [-dot(ws, (K.(xs .- Λ) .+ K.(xs .+ Λ)) .* ε.(xs)) for Λ in Λs]
 
     # shift momentum so gapless point is at p=0
@@ -45,3 +51,5 @@ function get_magnon_spectrum(γ, c=1.0; quadrature_rule=gausslobatto, N=100, num
 
     return p_phys, e_mag, kf
 end
+
+magnon_spectrum(s::InfiniteLLState; kwargs...) = get_magnon_spectrum(s.prob.c / s.n, c=s.prob.c; rho_gs=s.rho_k, Q=s.Q, ε=s.eps_k, n=s.n, kwargs...)

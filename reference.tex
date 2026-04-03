@@ -1,0 +1,101 @@
+\documentclass[11pt]{article}
+ 
+\usepackage[margin=.8in]{geometry} 
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{mathtools}
+\usepackage{subcaption}
+
+\usepackage{multirow}
+\usepackage{graphicx}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+
+\title{Lieb-Liniger Bethe Ansatz}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{The coordinate Bethe Ansatz}
+For $N$ bosons in a 1D domain of length $L$ with a delta-function interaction $V = 2c \sum \delta(x_i - x_j)$, the many-body wavefunction $\Psi(x_1, \dots, x_N)$ is constructed via the coordinate Bethe Ansatz. In the fundamental sector $0 \le x_1 \le x_2 \le \dots \le x_N \le L$, the wavefunction is:
+\begin{equation}
+    \Psi(x_1, \dots, x_N) = \sum_{P \in S_N} A(P) e^{i \sum_{j=1}^N k_{P_j} x_j}
+\end{equation}
+where $S_N$ is the set of all permutations of the rapidities $\{k_j\}$. The coefficients $A(P)$ ensure the continuity of the derivative across the delta-potential:
+\begin{equation}
+    A(P) = \prod_{j<l} \left[ 1 - \frac{ic \text{ sgn}(x_j - x_l)}{k_{P_j} - k_{P_l}} \right]
+\end{equation}
+The total energy and momentum are given by:
+\begin{equation}
+    E = \sum_{j=1}^N k_j^2, \quad P_{tot} = \sum_{j=1}^N k_j
+\end{equation}
+
+\section{Discrete Bethe equations}
+The boundary conditions constrain the allowed values of $k_j$. We define the phase shift $\theta(x)$ and the kernel $K(x)$ as:
+\begin{equation}
+    \theta(x) = 2 \arctan\left(\frac{x}{c}\right), \quad K(x) = \frac{d\theta(x)}{dx} = \frac{2c}{c^2 + x^2}
+\end{equation}
+
+\subsection{Periodic boundary conditions (PBC)}
+The rapidities satisfy\cite{Oelkers_2006}:
+\begin{equation}
+    Lk_j = 2\pi n_j - \sum_{l \neq j}^N \theta(k_j - k_l)
+\end{equation}
+For the ground state, $n_j$ are integers (if $N$ is odd) or half-integers (if $N$ is even) centered around zero to ensure zero total momentum. The Gaudin matrix $G_{jm} = \partial f_j / \partial k_m$ is:
+\begin{equation}
+    G_{jm} = \delta_{jm} \left( L + \sum_{l \neq j} K(k_j - k_l) \right) - (1 - \delta_{jm}) K(k_j - k_m)
+\end{equation}
+
+\subsection{Hard-wall boundary conditions (Box)}
+The wavefunction vanishes at $x=0$ and $x=L$. Using the Gaudin-Yang formulation \cite{guan2005}, the rapidities satisfy \cite{Batchelor_2005}:
+\begin{equation}
+    2Lk_j = 2\pi n_j - \sum_{l \neq j}^N \left[ \theta(k_j - k_l) + \theta(k_j + k_l) \right]
+\end{equation}
+where $n_j \in \{1, 2, \dots, N\}$. The Gaudin matrix is:
+\begin{equation}
+    G_{jm} = \delta_{jm} \left( 2L + \sum_{l \neq j} [K(k_j - k_l) + K(k_j + k_l)] \right) + (1 - \delta_{jm}) [K(k_j + k_m) - K(k_j - k_m)]
+\end{equation}
+
+\subsection{Numerical solution}
+The Gaudin matrix corresponds to the Hessian of the Yang-Yang action $S(\{k\})$. Since $S$ is strictly convex for $c > 0$, the Gaudin matrix is symmetric positive definite (SPD). This allows us to solve the system using Newton's algorithm with a Cholesky decomposition to leverage the SPD property. We also find that a damping factor is necessary for convergence at large $c$.
+
+\section{Thermodynamic limit (TDL)}
+In the limit $N, L \to \infty$ with $\rho = N/L$ fixed, the rapidities form a continuous distribution $\rho(k)$ on $[-Q, Q]$\cite{zvonarev2010}.
+
+\subsection{Ground state integral equations}
+The root density is determined by the Lieb-Liniger integral equation:
+\begin{equation}
+    \rho(k) - \frac{1}{2\pi} \int_{-Q}^{Q} K(k - q) \rho(q) \, dq = \frac{1}{2\pi}
+\end{equation}
+We solve this over $[0, Q]$ using a symmetrized kernel $K(k-q) + K(k+q)$. Total density $n$ and energy density $e$ are obtained via $n = 2 \int_0^Q \rho(k) \, dk$ and $e = 2 \int_0^Q k^2 \rho(k) \, dk$.
+
+\subsection{Dressed energy and chemical potential}
+The elementary excitations are governed by the dressed energy $\varepsilon(k)$, which satisfies:
+\begin{equation}
+    \varepsilon(k) - \frac{1}{2\pi} \int_{-Q}^{Q} K(k - q) \varepsilon(q) \, dq = k^2 - \mu
+\end{equation}
+The chemical potential $\mu$ is uniquely determined by the condition that the dressed energy vanishes at the Fermi surface, $\varepsilon(Q) = 0$. Numerically, this is handled by solving for auxiliary functions $\varepsilon_0$ and $\varepsilon_1$ corresponding to $k^2$ and $1$ as inhomogeneous terms, respectively.
+
+\subsection{Elementary excitations}
+The excitation spectrum is defined by the dressed energy $\varepsilon(k)$ and the dressed momentum $P(k) = k + \int_{-Q}^Q \theta(k-q) \rho(q) dq$.
+\begin{itemize}
+    \item \textbf{Type I (Hole):} Corresponds to removing a particle from the Fermi sea ($|k| < Q$). The excitation energy is $\Delta E = -\varepsilon(k)$ and the momentum is $\Delta P = P(Q) - P(k)$.
+    \item \textbf{Type II (Particle):} Corresponds to adding a particle outside the Fermi sea ($|k| > Q$). The excitation energy is $\Delta E = \varepsilon(k)$ and the momentum is $\Delta P = P(k) - P(Q)$.
+\end{itemize}
+
+\subsection{Numerical solution}
+The continuum limit of the Bethe equations is exactly a Fredholm equation of the second kind. We solve this by approximating the integral using Gauss-Lobatto quadrature points and recasting it as a linear problem. For low $\gamma$, however, the kernel develops a sharp peak at $k=0$ which reduces the accuracy of this approach. In order to deal with this, we utilize the modified quadrature method as outlined in \cite{Fredholm2019}.
+
+\section{Local density approximation (LDA)}
+The LDA allows the study of non-uniform systems, such as a gas in a harmonic trap $V(x)$, by assuming local homogeneity. The local density $\rho(x)$ is determined by the local chemical potential $\mu(x) = \mu_0 - V(x)$, with $\mu_0$ solved via the normalization constraint:
+\begin{equation}
+    N_{tot} = \int \rho(x) \, dx, \quad E_{total} = \int \left[ e_{TDL}(\mu(x), c) + V(x)\rho(x) \right] dx
+\end{equation}
+
+
+\bibliographystyle{plainurl}
+\bibliography{refs.bib}
+
+\end{document}
