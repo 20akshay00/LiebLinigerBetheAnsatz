@@ -6,6 +6,8 @@ This repository has some basic scripts to compute the ground state energy and ex
 - Finite system with periodic or hard wall boundaries
 - Non-uniform system using a local density approximation
 
+![spectrum](./particle-hole-gamma=0.1_c=1.png)
+
 Additionally, the excitation spectrum can be computed for all of the above. A couple of examples with instructive comments can be found in `/scripts`.
 
 ## To-do
