@@ -192,3 +192,33 @@ function get_particle_hole_spectrum(γ, c=1.; quadrature_rule=gausslobatto, N=10
 
     return p_h, e_h, p_p, e_p, kf
 end
+
+
+function get_particle_hole_spectrum_alt(γ, c=1.; quadrature_rule=midpoint_quadrature, N=100, num_points=100, kwargs...)
+    rho_gs, _, _, Q = get_ground_state(γ=γ, c=c, quadrature_rule=quadrature_rule, N=N, kwargs...)
+    ε, _ = compute_dressed_energy(c, Q; quadrature_rule=quadrature_rule, N=N, kwargs...)
+
+    xs, ws = rescale(quadrature_rule(N)..., 0., Q)
+    θ(x) = 2 * atan(x / c)
+    P(k) = k + dot(ws, (θ.(k .- xs) .+ θ.(k .+ xs)) .* rho_gs.(xs))
+
+    kf = P(Q)
+
+    k_h_grid = range(0, Q, length=num_points)
+    P_h_vals = P.(k_h_grid)
+    E_h_vals = -ε.(k_h_grid)
+
+    p1 = kf .- P_h_vals
+    p2 = kf .+ P_h_vals
+
+    p_h = vcat(reverse(p1), p2)
+    e_h = vcat(reverse(E_h_vals), E_h_vals)
+
+    k_max = find_zero(k -> P(k) - 3 * kf, (Q, 10 * Q))
+
+    k_p_grid = range(Q, k_max, length=num_points * 2)
+    p_p = P.(k_p_grid) .- kf
+    e_p = ε.(k_p_grid)
+
+    return p_h, e_h, p_p, e_p, kf
+end
