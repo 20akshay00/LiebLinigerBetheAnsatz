@@ -131,7 +131,7 @@ end
         end
     end
 
-    @testset "Thermodynamic Convergence" begin
+    @testset "Convergence to TDL" begin
         # test if finite system energy density approaches TDL energy density
         c = 1.0
         rho_target = 1.0
@@ -148,11 +148,10 @@ end
         state_fin = solve(prob_fin)
         e_finite = energy_density(state_fin)
 
-        println(e_finite - e_tdl)
         @test e_finite ≈ e_tdl rtol = 1e-5
     end
 
-    @testset "Numerical Stability & Convexity" begin
+    @testset "Numerical stability of FiniteLLProblem" begin
         # test large N convergence with damping
         N = 1000
         L = 1000.0

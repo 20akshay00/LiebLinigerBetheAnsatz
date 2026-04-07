@@ -2,12 +2,16 @@ using LiebLinigerBetheAnsatz
 using LinearAlgebra, Plots, LaTeXStrings
 
 begin # single parameter
-    @time state = solve(FiniteLLProblem(1., 1e-7, N=2, bc=:hardwall))
+    @time state = solve(FiniteLLProblem(1., 1e1, N=2, bc=:hardwall))
     rho_k = quasimomentum_distribution(state)
     e = energy_density(state)
     n = average_particle_density(state)
     Q = fermi_quasimomentum(state)
     println(energy(state))
+
+    #dens = particle_density(state)
+    #xs = range(0., 1., 100)
+    #plot(dens, xs)
 end
 
 begin # convergence to thermodynamic limit
@@ -35,6 +39,3 @@ begin # log-log
     scatter(Ns, abs.(energy_densities .- energy_densities[end]) .+ 1e-8, lab="bc=$(string(bc))", yscale=:log10)
     plot!(title="Convergence to TDL | ρ = $ρ | c = $c", xlabel="Particle number", ylabel="Energy density", framestyle=:box)
 end
-
-
-
