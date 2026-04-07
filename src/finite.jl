@@ -61,8 +61,8 @@ function solve_quasimomentum_distribution(c, L, ns; bc=:hardwall, maxiter=50, at
 
     # avoid division by zero for c=0 (also force G to be positive-definite)
     c += 1e-12
-    θ(x) = 2 * atan(x / c)
-    K(x) = 2 * c / (c^2 + x^2)
+    θ(x) = atan(x / c)
+    K(x) = c / (c^2 + x^2)
 
     local G = zeros(N, N)
     local F = zeros(N)
@@ -70,32 +70,32 @@ function solve_quasimomentum_distribution(c, L, ns; bc=:hardwall, maxiter=50, at
     for iter in 1:maxiter
         if bc === :periodic
             for j in 1:N
-                # Bethe equation residual: L*kj - 2π*nj + sum(θ) = 0
-                interact = sum(θ(k[j] - k[l]) for l in 1:N if l != j)
+                # Bethe equation residual: L*kj - 2π*nj + 2sum(θ) = 0
+                interact = 2 * sum(θ(k[j] - k[l]) for l in 1:N if l != j)
                 F[j] = k[j] * L - 2π * ns[j] + interact
 
                 # Jacobian
                 for m in 1:N
                     if j == m
-                        G[j, j] = L + sum(K(k[j] - k[l]) for l in 1:N if l != j)
+                        G[j, j] = L + 2 * sum(K(k[j] - k[l]) for l in 1:N if l != j)
                     else
-                        G[j, m] = -K(k[j] - k[m])
+                        G[j, m] = -2 * K(k[j] - k[m])
                     end
                 end
             end
         else
             for j in 1:N
-                # Bethe equation residual: 2*L*kj - 2π*nj + sum(θ_minus + θ_plus) = 0
+                # Bethe equation residual: L*kj - π*nj + sum(θ_minus + θ_plus) = 0
                 inter_minus = sum(θ(k[j] - k[l]) for l in 1:N if l != j)
                 inter_plus = sum(θ(k[j] + k[l]) for l in 1:N if l != j)
 
-                F[j] = 2 * k[j] * L - 2π * ns[j] + inter_minus + inter_plus
+                F[j] = k[j] * L - π * ns[j] + inter_minus + inter_plus
 
                 # Jacobian
                 for m in 1:N
                     if j == m
                         sum_K = sum(K(k[j] - k[l]) + K(k[j] + k[l]) for l in 1:N if l != j)
-                        G[j, j] = 2 * L + sum_K
+                        G[j, j] = L + sum_K
                     else
                         # dFj / dkm = -K(kj - km) + K(kj + km)
                         G[j, m] = -K(k[j] - k[m]) + K(k[j] + k[m])
@@ -245,3 +245,4 @@ end
 
 quasimomentum_distribution(s::FiniteLLState) = s.k
 fermi_quasimomentum(s::FiniteLLState) = maximum(s.k)
+
