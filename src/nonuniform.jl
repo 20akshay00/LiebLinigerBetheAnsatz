@@ -114,15 +114,6 @@ function solve(p::NonUniformLLProblem; eos_samples=40, maxiter=50, atol=1e-8)
     return NonUniformLLState(p, μ_global, rho_x, e_int_x, n_final, e_total)
 end
 
-function _lerp(x, x_grid, y_grid)
-    x <= x_grid[1] && return y_grid[1]
-    x >= x_grid[end] && return y_grid[end]
-    i = searchsortedfirst(x_grid, x)
-    x0, x1 = x_grid[i-1], x_grid[i]
-    y0, y1 = y_grid[i-1], y_grid[i]
-    return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
-end
-
 energy(s::NonUniformLLState) = s.E_total
 average_particle_density(s::NonUniformLLState) = s.N_total / (s.prob.domain[2] - s.prob.domain[1])
 particle_density(s::NonUniformLLState) = s.rho_x
