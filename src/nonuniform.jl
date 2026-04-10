@@ -32,7 +32,7 @@ function _construct_chebyshev_eos(c::Float64, μ_max::Float64; atol=1e-5, max_no
 end
 
 """
-    NonUniformLLProblem(; c, V, N=nothing, μ=nothing, domain=(-1.0, 1.0), rho_eos=nothing, e_eos=nothing)
+    NonUniformLLProblem(; c, V, N=nothing, μ=nothing, domain=(-1.0, 1.0), ρ_eos=nothing, e_eos=nothing)
 
 Problem definition for a Lieb-Liniger gas in an external potential V(x) using LDA.
 
@@ -42,7 +42,7 @@ Problem definition for a Lieb-Liniger gas in an external potential V(x) using LD
 - `N`: Total particle number.
 - `μ`: Global chemical potential.
 - `domain`: The spatial region [x_min, x_max].
-- `rho_eos`: A callable `f(μ)` for particle density.
+- `ρ_eos`: A callable `f(μ)` for particle density.
 - `e_eos`: A callable `f(μ)` for internal energy density.
 """
 struct NonUniformLLProblem{FR,FE} <: LLProblem
@@ -51,21 +51,21 @@ struct NonUniformLLProblem{FR,FE} <: LLProblem
     N::Union{Nothing,Float64}
     μ::Union{Nothing,Float64}
     domain::Tuple{Float64,Float64}
-    rho_eos::FR
+    ρ_eos::FR
     e_eos::FE
 
-    function NonUniformLLProblem(; c, V, N=nothing, μ=nothing, domain=(-1.0, 1.0), rho_eos=nothing, e_eos=nothing)
+    function NonUniformLLProblem(; c, V, N=nothing, μ=nothing, domain=(-1.0, 1.0), ρ_eos=nothing, e_eos=nothing)
         if isnothing(N) == isnothing(μ)
             throw(ArgumentError("Must specify exactly one of N or μ."))
         end
 
-        if isnothing(rho_eos) || isnothing(e_eos)
+        if isnothing(ρ_eos) || isnothing(e_eos)
             μ_est = !isnothing(μ) ? μ : (isnothing(N) ? 10.0 : N * 0.5)
             eos_pair = _construct_chebyshev_eos(c, μ_est * 2.5)
-            rho_eos, e_eos = eos_pair.rho, eos_pair.e
+            ρ_eos, e_eos = eos_pair.rho, eos_pair.e
         end
 
-        new{typeof(rho_eos),typeof(e_eos)}(c, V, N, μ, domain, rho_eos, e_eos)
+        new{typeof(ρ_eos),typeof(e_eos)}(c, V, N, μ, domain, ρ_eos, e_eos)
     end
 end
 
@@ -94,7 +94,7 @@ function solve(p::NonUniformLLProblem; maxiter=50, atol=1e-10)
     μ0 = if !isnothing(p.μ)
         p.μ
     else
-        calc_n(m) = quadgk(x -> p.rho_eos(m - p.V(x)), x_min, x_max)[1]
+        calc_n(m) = quadgk(x -> p.ρ_eos(m - p.V(x)), x_min, x_max)[1]
 
         ml, mh = 0.0, 1.0
         iter = 0
@@ -111,7 +111,7 @@ function solve(p::NonUniformLLProblem; maxiter=50, atol=1e-10)
         (ml + mh) / 2
     end
 
-    rho_x(x) = p.rho_eos(μ0 - p.V(x))
+    rho_x(x) = p.ρ_eos(μ0 - p.V(x))
     e_int_x(x) = p.e_eos(μ0 - p.V(x))
 
     n_final, _ = quadgk(rho_x, x_min, x_max)
@@ -119,7 +119,7 @@ function solve(p::NonUniformLLProblem; maxiter=50, atol=1e-10)
     e_total, _ = quadgk(x_min, x_max) do x
         vx = p.V(x)
         μ_loc = μ0 - vx
-        return p.e_eos(μ_loc) + vx * p.rho_eos(μ_loc)
+        return p.e_eos(μ_loc) + vx * p.ρ_eos(μ_loc)
     end
 
     return NonUniformLLState(p, μ0, rho_x, e_int_x, n_final, e_total)

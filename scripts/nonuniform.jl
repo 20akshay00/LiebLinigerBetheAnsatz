@@ -57,8 +57,8 @@ begin
 end
 
 begin
-    rho_eos, e_eos = construct_lerp_eos(c, μ, L=200)
-    state1 = solve(NonUniformLLProblem(c=c, V=V, μ=μ, rho_eos=rho_eos, e_eos=e_eos, domain=(-L, L)))
+    ρ_eos, e_eos = construct_lerp_eos(c, μ, L=200)
+    state1 = solve(NonUniformLLProblem(c=c, V=V, μ=μ, ρ_eos=ρ_eos, e_eos=e_eos, domain=(-L, L)))
     dens1 = particle_density(state1)
     xs1 = range(domain(state1)..., 100)
     plot(dens1, xs1, lab="E = $(round(energy(state1), digits=3))", lw=2)
