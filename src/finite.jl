@@ -7,7 +7,7 @@ Low-level Newton solver for the discrete Bethe equations given a fixed set of qu
 - `c`: Coupling constant.
 - `L`: System length.
 - `ns`: Vector of quantum numbers defining the state.
-- `bc`: Boundary conditions.
+- `bc`: Boundary conditions - [:hardwall, :periodic].
 - `maxiter`: Maximum iterations for Newton's method.
 - `atol`: Absolute tolerance for convergence.
 """
@@ -56,6 +56,12 @@ redundant calculations while maintaining physical readability.
 """
 function solve_quasimomentum_distribution(c, L, ns; bc=:hardwall, maxiter=50, atol=1e-10, relaxation=0.8)
     N = length(ns)
+
+    if (N == 0)
+        @warn "Attempting to solve a system with zero particles!"
+        return 0., 0., 0.
+    end
+
     # non-interacting k values
     k = bc === :periodic ? (2π / L) .* ns : (π / L) .* ns
 
@@ -71,13 +77,13 @@ function solve_quasimomentum_distribution(c, L, ns; bc=:hardwall, maxiter=50, at
         if bc === :periodic
             for j in 1:N
                 # Bethe equation residual: L*kj - 2π*nj + 2sum(θ) = 0
-                interact = 2 * sum(θ(k[j] - k[l]) for l in 1:N if l != j)
+                interact = 2 * sum(θ(k[j] - k[l]) for l in 1:N if l != j; init=0.)
                 F[j] = k[j] * L - 2π * ns[j] + interact
 
                 # Jacobian
                 for m in 1:N
                     if j == m
-                        G[j, j] = L + 2 * sum(K(k[j] - k[l]) for l in 1:N if l != j)
+                        G[j, j] = L + 2 * sum(K(k[j] - k[l]) for l in 1:N if l != j; init=0.)
                     else
                         G[j, m] = -2 * K(k[j] - k[m])
                     end
@@ -86,15 +92,15 @@ function solve_quasimomentum_distribution(c, L, ns; bc=:hardwall, maxiter=50, at
         else
             for j in 1:N
                 # Bethe equation residual: L*kj - π*nj + sum(θ_minus + θ_plus) = 0
-                inter_minus = sum(θ(k[j] - k[l]) for l in 1:N if l != j)
-                inter_plus = sum(θ(k[j] + k[l]) for l in 1:N if l != j)
+                inter_minus = sum(θ(k[j] - k[l]) for l in 1:N if l != j; init=0.)
+                inter_plus = sum(θ(k[j] + k[l]) for l in 1:N if l != j; init=0.)
 
                 F[j] = k[j] * L - π * ns[j] + inter_minus + inter_plus
 
                 # Jacobian
                 for m in 1:N
                     if j == m
-                        sum_K = sum(K(k[j] - k[l]) + K(k[j] + k[l]) for l in 1:N if l != j)
+                        sum_K = sum(K(k[j] - k[l]) + K(k[j] + k[l]) for l in 1:N if l != j; init=0.)
                         G[j, j] = L + sum_K
                     else
                         # dFj / dkm = -K(kj - km) + K(kj + km)
