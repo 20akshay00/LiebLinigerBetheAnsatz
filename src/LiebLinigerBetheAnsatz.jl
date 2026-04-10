@@ -2,7 +2,7 @@ module LiebLinigerBetheAnsatz
 
 using Reexport
 @reexport using FastGaussQuadrature
-using Roots, LinearAlgebra, LaTeXStrings, HCubature, Combinatorics, QuadGK
+using Roots, LinearAlgebra, LaTeXStrings, HCubature, Combinatorics, QuadGK, FastChebInterp
 
 include("common.jl")
 include("fredholm.jl")
