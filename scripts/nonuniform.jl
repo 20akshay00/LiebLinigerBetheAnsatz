@@ -20,7 +20,7 @@ begin
 end
 
 begin
-    e = energy(state) * 0.5
+    e = energy(state)
     n = sum(dens.(xs) * step(xs))
     f = e - μ * n
     println("-----------------")
@@ -66,7 +66,7 @@ begin
 end
 
 begin
-    e1 = energy(state1) * 0.5
+    e1 = energy(state1)
     n1 = sum(dens1.(xs) * step(xs1))
     f1 = e1 - μ * n1
 
