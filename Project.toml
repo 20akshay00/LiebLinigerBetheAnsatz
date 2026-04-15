@@ -1,6 +1,7 @@
 name = "LiebLinigerBetheAnsatz"
 uuid = "edc2cedd-d8c0-480a-8582-a07a8a1a7c38"
 authors = ["Akshay Shankar"]
+version = "0.1.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
